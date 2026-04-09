@@ -1,0 +1,550 @@
+[
+  {
+    "id": "tab_enersense",
+    "type": "tab",
+    "label": "EnerSense — Pipeline",
+    "disabled": false,
+    "info": "Main data pipeline: MQTT ingestion → processing → SQLite → dashboard"
+  },
+  {
+    "id": "tab_dashboard",
+    "type": "tab",
+    "label": "EnerSense — Dashboard",
+    "disabled": false,
+    "info": "UI dashboard nodes"
+  },
+
+  {
+    "id": "ui_base",
+    "type": "ui_base",
+    "theme": {
+      "name": "theme-dark",
+      "darkTheme": {
+        "default": "#1F3864",
+        "baseColor": "#1F3864",
+        "baseFont": "-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Oxygen-Sans,Ubuntu,Cantarell,Helvetica Neue,sans-serif",
+        "edited": true
+      }
+    },
+    "site": {
+      "name": "EnerSense",
+      "hideToolbar": "false",
+      "allowSwipe": "false",
+      "dateFormat": "DD/MM/YYYY",
+      "sizes": { "sx": 48, "sy": 48, "gx": 6, "gy": 6, "cx": 6, "cy": 6, "px": 0, "py": 0 }
+    }
+  },
+
+  { "id": "ui_tab_main",  "type": "ui_tab",   "name": "Dashboard", "icon": "dashboard", "order": 1, "disp": true },
+  { "id": "ui_group_live",    "type": "ui_group", "name": "Live Monitor",          "tab": "ui_tab_main", "order": 1, "disp": true, "width": "12" },
+  { "id": "ui_group_history", "type": "ui_group", "name": "History & Cost",        "tab": "ui_tab_main", "order": 2, "disp": true, "width": "12" },
+  { "id": "ui_group_alerts",  "type": "ui_group", "name": "Alerts & Intelligence", "tab": "ui_tab_main", "order": 3, "disp": true, "width": "12" },
+  { "id": "ui_group_control", "type": "ui_group", "name": "Appliance Control",     "tab": "ui_tab_main", "order": 4, "disp": true, "width": "6"  },
+
+  {
+    "id": "mqtt_broker_config",
+    "type": "mqtt-broker",
+    "name": "Local Mosquitto",
+    "broker": "localhost",
+    "port": "1883",
+    "clientid": "nodered_enersense",
+    "autoConnect": true,
+    "usetls": false,
+    "protocolVersion": "4",
+    "keepalive": "60",
+    "cleansession": true,
+    "credentials": { "user": "enersense", "password": "enersense123" }
+  },
+
+  {
+    "id": "mqtt_in_telemetry",
+    "type": "mqtt in",
+    "z": "tab_enersense",
+    "name": "MQTT — telemetry",
+    "topic": "enersense/+/+/telemetry",
+    "qos": "1",
+    "datatype": "json",
+    "broker": "mqtt_broker_config",
+    "x": 120, "y": 80,
+    "wires": [["parse_telemetry"]]
+  },
+
+  {
+    "id": "mqtt_in_aggregate",
+    "type": "mqtt in",
+    "z": "tab_enersense",
+    "name": "MQTT — aggregate",
+    "topic": "enersense/+/+/aggregate",
+    "qos": "1",
+    "datatype": "json",
+    "broker": "mqtt_broker_config",
+    "x": 120, "y": 180,
+    "wires": [["parse_aggregate"]]
+  },
+
+  {
+    "id": "mqtt_in_relay_status",
+    "type": "mqtt in",
+    "z": "tab_enersense",
+    "name": "MQTT — relay status",
+    "topic": "enersense/+/+/relay/status",
+    "qos": "1",
+    "datatype": "utf8",
+    "broker": "mqtt_broker_config",
+    "x": 120, "y": 280,
+    "wires": [["relay_status_to_ui"]]
+  },
+
+  {
+    "id": "parse_telemetry",
+    "type": "function",
+    "z": "tab_enersense",
+    "name": "Parse & enrich telemetry",
+    "func": "const parts = msg.topic.split('/');\nmsg.node_id      = parts[1] || 'unknown';\nmsg.appliance_id = parts[2] || 'unknown';\nconst d = msg.payload;\nif (d.I_rms === undefined || d.P_W === undefined) return null;\nmsg.ts_ms = d.ts_ms || Date.now();\nreturn msg;",
+    "outputs": 1,
+    "x": 360, "y": 80,
+    "wires": [["fanout_telemetry"]]
+  },
+
+  {
+    "id": "fanout_telemetry",
+    "type": "function",
+    "z": "tab_enersense",
+    "name": "Fan-out",
+    "func": "return [msg, msg, msg, msg];",
+    "outputs": 4,
+    "outputLabels": ["SQLite write", "Dashboard gauges", "Anomaly check", "Cost compute"],
+    "x": 580, "y": 80,
+    "wires": [
+      ["sqlite_write_telemetry"],
+      ["dash_power_gauge", "dash_current_text", "dash_voltage_text", "dash_power_chart"],
+      ["anomaly_check"],
+      ["cost_compute"]
+    ]
+  },
+
+  {
+    "id": "sqlite_write_telemetry",
+    "type": "function",
+    "z": "tab_enersense",
+    "name": "Prep telemetry for DB",
+    "func": "const d = msg.payload;\nmsg.payload = {\n  ts_ms:     msg.ts_ms,\n  node:      msg.node_id,\n  appliance: msg.appliance_id,\n  I_rms:     d.I_rms  || 0,\n  V_rms:     d.V_rms  || 0,\n  P_W:       d.P_W    || 0,\n  E_Wh:      d.E_Wh   || 0,\n  pf:        d.pf     || 1,\n  relay:     d.relay  || 'OFF',\n  anomaly:   d.anomaly ? 1 : 0\n};\nmsg.url    = 'http://127.0.0.1:5051/write/telemetry';\nmsg.method = 'POST';\nmsg.headers = { 'Content-Type': 'application/json' };\nreturn msg;",
+    "outputs": 1,
+    "x": 820, "y": 40,
+    "wires": [["http_write_telemetry"]]
+  },
+
+  {
+    "id": "http_write_telemetry",
+    "type": "http request",
+    "z": "tab_enersense",
+    "name": "POST → SQLite telemetry",
+    "method": "POST",
+    "ret": "txt",
+    "paytoqs": "ignore",
+    "url": "http://127.0.0.1:5051/write/telemetry",
+    "tls": "",
+    "persist": false,
+    "proxy": "",
+    "x": 1060, "y": 40,
+    "wires": [[]]
+  },
+
+  {
+    "id": "parse_aggregate",
+    "type": "function",
+    "z": "tab_enersense",
+    "name": "Parse aggregate",
+    "func": "const parts = msg.topic.split('/');\nmsg.node_id      = parts[1] || 'unknown';\nmsg.appliance_id = parts[2] || 'unknown';\nreturn msg;",
+    "outputs": 1,
+    "x": 360, "y": 180,
+    "wires": [["sqlite_write_aggregate", "dash_kwh_text", "dash_cost_text"]]
+  },
+
+  {
+    "id": "sqlite_write_aggregate",
+    "type": "function",
+    "z": "tab_enersense",
+    "name": "Prep aggregate for DB",
+    "func": "const d = msg.payload;\nmsg.payload = {\n  node:      msg.node_id,\n  appliance: msg.appliance_id,\n  total_kwh: d.total_kwh || 0,\n  avg_w:     d.avg_w     || 0,\n  max_w:     d.max_w     || 0,\n  min_w:     d.min_w     || 0,\n  cost_tnd:  d.cost_tnd  || 0,\n  samples:   d.samples   || 0\n};\nmsg.url    = 'http://127.0.0.1:5051/write/aggregate';\nmsg.method = 'POST';\nmsg.headers = { 'Content-Type': 'application/json' };\nreturn msg;",
+    "outputs": 1,
+    "x": 600, "y": 180,
+    "wires": [["http_write_aggregate"]]
+  },
+
+  {
+    "id": "http_write_aggregate",
+    "type": "http request",
+    "z": "tab_enersense",
+    "name": "POST → SQLite aggregate",
+    "method": "POST",
+    "ret": "txt",
+    "url": "http://127.0.0.1:5051/write/aggregate",
+    "x": 840, "y": 180,
+    "wires": [[]]
+  },
+
+  {
+    "id": "anomaly_check",
+    "type": "function",
+    "z": "tab_enersense",
+    "name": "Anomaly gate",
+    "func": "const THRESHOLD_W = 2500;\nconst d = msg.payload;\nconst flagged = d.anomaly === true || parseFloat(d.P_W) > THRESHOLD_W;\nif (flagged) {\n    msg.anomaly_text = '⚠ ANOMALY on ' + msg.appliance_id + ': ' + d.P_W + ' W @ ' + new Date().toLocaleTimeString();\n    return msg;\n}\nreturn null;",
+    "outputs": 1,
+    "x": 820, "y": 100,
+    "wires": [["dash_anomaly_list", "sqlite_write_anomaly"]]
+  },
+
+  {
+    "id": "sqlite_write_anomaly",
+    "type": "function",
+    "z": "tab_enersense",
+    "name": "Prep anomaly for DB",
+    "func": "const d = msg.payload;\nmsg.payload = {\n  node:      msg.node_id,\n  appliance: msg.appliance_id,\n  P_W:       d.P_W   || 0,\n  I_rms:     d.I_rms || 0,\n  message:   msg.anomaly_text || ''\n};\nmsg.url    = 'http://127.0.0.1:5051/write/anomaly';\nmsg.method = 'POST';\nmsg.headers = { 'Content-Type': 'application/json' };\nreturn msg;",
+    "outputs": 1,
+    "x": 1060, "y": 100,
+    "wires": [["http_write_anomaly"]]
+  },
+
+  {
+    "id": "http_write_anomaly",
+    "type": "http request",
+    "z": "tab_enersense",
+    "name": "POST → SQLite anomaly",
+    "method": "POST",
+    "ret": "txt",
+    "url": "http://127.0.0.1:5051/write/anomaly",
+    "x": 1280, "y": 100,
+    "wires": [[]]
+  },
+
+  {
+    "id": "cost_compute",
+    "type": "function",
+    "z": "tab_enersense",
+    "name": "Running daily cost",
+    "func": "const key    = 'daily_kwh_' + (msg.appliance_id || 'default');\nconst TARIFF = 0.180;\nlet daily_kwh    = flow.get(key) || 0;\nconst prev_ewh   = flow.get(key + '_prev_ewh') || 0;\nconst curr_ewh   = parseFloat(msg.payload.E_Wh) || 0;\nif (curr_ewh >= prev_ewh) {\n    daily_kwh += (curr_ewh - prev_ewh) / 1000.0;\n}\nflow.set(key, daily_kwh);\nflow.set(key + '_prev_ewh', curr_ewh);\nmsg.daily_kwh  = parseFloat(daily_kwh.toFixed(4));\nmsg.daily_cost = parseFloat((daily_kwh * TARIFF).toFixed(4));\nreturn msg;",
+    "outputs": 1,
+    "x": 820, "y": 140,
+    "wires": [["dash_daily_kwh", "dash_daily_cost"]]
+  },
+
+  {
+    "id": "midnight_reset",
+    "type": "inject",
+    "z": "tab_enersense",
+    "name": "Midnight reset",
+    "repeat": "",
+    "crontab": "0 0 * * *",
+    "once": false,
+    "payload": "reset",
+    "payloadType": "str",
+    "x": 120, "y": 360,
+    "wires": [["reset_daily_counters"]]
+  },
+
+  {
+    "id": "reset_daily_counters",
+    "type": "function",
+    "z": "tab_enersense",
+    "name": "Reset daily flow vars",
+    "func": "const keys = flow.keys();\nif (keys) keys.forEach(k => { if (k.startsWith('daily_kwh_')) flow.set(k, 0); });\nreturn null;",
+    "outputs": 1,
+    "x": 360, "y": 360,
+    "wires": [[]]
+  },
+
+  {
+    "id": "relay_status_to_ui",
+    "type": "function",
+    "z": "tab_enersense",
+    "name": "Relay status → UI",
+    "func": "msg.payload = (msg.payload.trim().toUpperCase() === 'ON');\nreturn msg;",
+    "outputs": 1,
+    "x": 360, "y": 280,
+    "wires": [["dash_relay_switch"]]
+  },
+
+  {
+    "id": "mqtt_out_relay_cmd",
+    "type": "mqtt out",
+    "z": "tab_enersense",
+    "name": "MQTT — relay cmd",
+    "topic": "enersense/node_01/appliance_01/relay/cmd",
+    "qos": "1",
+    "retain": "true",
+    "broker": "mqtt_broker_config",
+    "x": 620, "y": 280,
+    "wires": []
+  },
+
+  {
+    "id": "dash_relay_cmd_out",
+    "type": "function",
+    "z": "tab_enersense",
+    "name": "Switch → relay cmd",
+    "func": "msg.payload = msg.payload ? 'ON' : 'OFF';\nreturn msg;",
+    "outputs": 1,
+    "x": 380, "y": 320,
+    "wires": [["mqtt_out_relay_cmd"]]
+  },
+
+  {
+    "id": "ml_predict_trigger",
+    "type": "inject",
+    "z": "tab_enersense",
+    "name": "Every 5 min → ML predict",
+    "repeat": "300",
+    "once": true,
+    "onceDelay": 5,
+    "payload": "",
+    "payloadType": "str",
+    "x": 150, "y": 440,
+    "wires": [["ml_build_features"]]
+  },
+
+  {
+    "id": "ml_build_features",
+    "type": "function",
+    "z": "tab_enersense",
+    "name": "Build lag features",
+    "func": "// Read last 3 hourly kWh values from flow context\n// These are updated by cost_compute on every telemetry message\nconst lag1 = flow.get('lag_1h') || 0.5;\nconst lag2 = flow.get('lag_2h') || 0.5;\nconst lag3 = flow.get('lag_3h') || 0.5;\nmsg.payload = { lag_1h: lag1, lag_2h: lag2, lag_3h: lag3 };\nmsg.url     = 'http://127.0.0.1:5050/forecast';\nmsg.method  = 'POST';\nmsg.headers = { 'Content-Type': 'application/json' };\nreturn msg;",
+    "outputs": 1,
+    "x": 380, "y": 440,
+    "wires": [["http_ml_forecast"]]
+  },
+
+  {
+    "id": "http_ml_forecast",
+    "type": "http request",
+    "z": "tab_enersense",
+    "name": "POST → /forecast",
+    "method": "POST",
+    "ret": "obj",
+    "url": "http://127.0.0.1:5050/forecast",
+    "x": 600, "y": 440,
+    "wires": [["ml_forecast_to_ui"]]
+  },
+
+  {
+    "id": "ml_forecast_to_ui",
+    "type": "function",
+    "z": "tab_enersense",
+    "name": "Format forecast for UI",
+    "func": "if (!msg.payload || !msg.payload.forecast) return null;\nconst fc = msg.payload.forecast;\nconst lines = fc.map(f => `Hour ${f.hour}:00 → ${f.predicted_w} W (${f.predicted_kwh} kWh)`);\nmsg.payload = lines.join('\\n');\nmsg.total   = msg.payload.total_kwh;\nreturn msg;",
+    "outputs": 1,
+    "x": 820, "y": 440,
+    "wires": [["dash_forecast_text"]]
+  },
+
+  {
+    "id": "ml_anomaly_trigger",
+    "type": "function",
+    "z": "tab_enersense",
+    "name": "Forward to ML anomaly",
+    "func": "const d = msg.payload;\nmsg.payload = {\n  appliance_id: msg.appliance_id,\n  P_W:  d.P_W,\n  hour: new Date().getHours()\n};\nmsg.url    = 'http://127.0.0.1:5050/anomaly';\nmsg.method = 'POST';\nmsg.headers = { 'Content-Type': 'application/json' };\nreturn msg;",
+    "outputs": 1,
+    "x": 820, "y": 500,
+    "wires": [["http_ml_anomaly"]]
+  },
+
+  {
+    "id": "http_ml_anomaly",
+    "type": "http request",
+    "z": "tab_enersense",
+    "name": "POST → /anomaly",
+    "method": "POST",
+    "ret": "obj",
+    "url": "http://127.0.0.1:5050/anomaly",
+    "x": 1020, "y": 500,
+    "wires": [["ml_anomaly_result"]]
+  },
+
+  {
+    "id": "ml_anomaly_result",
+    "type": "function",
+    "z": "tab_enersense",
+    "name": "ML anomaly result",
+    "func": "if (!msg.payload) return null;\nif (msg.payload.anomaly) {\n  msg.anomaly_text = '🤖 ML: ' + msg.payload.reason;\n  return [msg, null];\n}\nreturn [null, null];",
+    "outputs": 1,
+    "x": 1220, "y": 500,
+    "wires": [["dash_anomaly_list"]]
+  },
+
+  {
+    "id": "inject_test",
+    "type": "inject",
+    "z": "tab_enersense",
+    "name": "Inject test telemetry",
+    "repeat": "2",
+    "once": true,
+    "onceDelay": 0.5,
+    "topic": "enersense/node_01/appliance_01/telemetry",
+    "payload": "{\"I_rms\":4.23,\"V_rms\":228.5,\"P_W\":966.4,\"E_Wh\":0.268,\"pf\":0.99,\"anomaly\":false,\"relay\":\"ON\",\"ts_ms\":0}",
+    "payloadType": "json",
+    "x": 140, "y": 540,
+    "wires": [["parse_telemetry"]]
+  },
+
+  {
+    "id": "dash_power_gauge",
+    "type": "ui_gauge",
+    "z": "tab_dashboard",
+    "name": "Power gauge",
+    "group": "ui_group_live",
+    "order": 1, "width": "4", "height": "4",
+    "gtype": "gage",
+    "title": "Power (W)",
+    "label": "W",
+    "format": "{{value}}",
+    "min": "0", "max": "3000",
+    "colors": ["#00b500", "#e6e600", "#e60000"],
+    "seg1": "1000", "seg2": "2000",
+    "x": 820, "y": 60,
+    "wires": []
+  },
+
+  {
+    "id": "dash_current_text",
+    "type": "ui_text",
+    "z": "tab_dashboard",
+    "group": "ui_group_live",
+    "order": 2, "width": "2", "height": "2",
+    "name": "Current display",
+    "label": "Current (A)",
+    "format": "{{msg.payload.I_rms}} A",
+    "layout": "row-spread",
+    "x": 820, "y": 100,
+    "wires": []
+  },
+
+  {
+    "id": "dash_voltage_text",
+    "type": "ui_text",
+    "z": "tab_dashboard",
+    "group": "ui_group_live",
+    "order": 3, "width": "2", "height": "2",
+    "name": "Voltage display",
+    "label": "Voltage (V)",
+    "format": "{{msg.payload.V_rms}} V",
+    "layout": "row-spread",
+    "x": 820, "y": 140,
+    "wires": []
+  },
+
+  {
+    "id": "dash_power_chart",
+    "type": "ui_chart",
+    "z": "tab_dashboard",
+    "name": "Power history chart",
+    "group": "ui_group_live",
+    "order": 4, "width": "12", "height": "6",
+    "label": "Power over time (W)",
+    "chartType": "line",
+    "legend": "false",
+    "xformat": "HH:mm:ss",
+    "interpolate": "linear",
+    "nodata": "Waiting for data...",
+    "ymin": "0", "ymax": "3000",
+    "removeOlder": "30",
+    "removeOlderUnit": "60",
+    "colors": ["#2E74B5"],
+    "outputs": 1,
+    "x": 820, "y": 180,
+    "wires": [[]]
+  },
+
+  {
+    "id": "dash_kwh_text",
+    "type": "ui_text",
+    "z": "tab_dashboard",
+    "group": "ui_group_history",
+    "order": 1, "width": "3", "height": "2",
+    "label": "Session Energy (kWh)",
+    "format": "{{msg.payload.total_kwh}} kWh",
+    "x": 820, "y": 220,
+    "wires": []
+  },
+
+  {
+    "id": "dash_cost_text",
+    "type": "ui_text",
+    "z": "tab_dashboard",
+    "group": "ui_group_history",
+    "order": 2, "width": "3", "height": "2",
+    "label": "Session Cost (TND)",
+    "format": "{{msg.payload.cost_tnd}} TND",
+    "x": 820, "y": 260,
+    "wires": []
+  },
+
+  {
+    "id": "dash_daily_kwh",
+    "type": "ui_text",
+    "z": "tab_dashboard",
+    "group": "ui_group_history",
+    "order": 3, "width": "3", "height": "2",
+    "label": "Today (kWh)",
+    "format": "{{msg.daily_kwh}} kWh",
+    "x": 820, "y": 300,
+    "wires": []
+  },
+
+  {
+    "id": "dash_daily_cost",
+    "type": "ui_text",
+    "z": "tab_dashboard",
+    "group": "ui_group_history",
+    "order": 4, "width": "3", "height": "2",
+    "label": "Today Cost (TND)",
+    "format": "{{msg.daily_cost}} TND",
+    "x": 820, "y": 340,
+    "wires": []
+  },
+
+  {
+    "id": "dash_forecast_text",
+    "type": "ui_text",
+    "z": "tab_dashboard",
+    "group": "ui_group_alerts",
+    "order": 1, "width": "12", "height": "4",
+    "label": "6-Hour Forecast",
+    "format": "<pre>{{msg.payload}}</pre>",
+    "layout": "col-center",
+    "x": 820, "y": 380,
+    "wires": []
+  },
+
+  {
+    "id": "dash_anomaly_list",
+    "type": "ui_text",
+    "z": "tab_dashboard",
+    "group": "ui_group_alerts",
+    "order": 2, "width": "12", "height": "2",
+    "label": "Latest Alert",
+    "format": "{{msg.anomaly_text}}",
+    "layout": "col-center",
+    "x": 820, "y": 420,
+    "wires": []
+  },
+
+  {
+    "id": "dash_relay_switch",
+    "type": "ui_switch",
+    "z": "tab_dashboard",
+    "name": "Relay control",
+    "label": "Appliance Power",
+    "group": "ui_group_control",
+    "order": 1, "width": "4", "height": "2",
+    "passthru": false,
+    "decouple": "false",
+    "topic": "relay",
+    "onvalue": "true",  "onvalueType": "bool",
+    "onicon": "power",  "oncolor": "#00b500",
+    "offvalue": "false", "offvalueType": "bool",
+    "officon": "power", "offcolor": "#e60000",
+    "animate": true,
+    "x": 820, "y": 460,
+    "wires": [["dash_relay_cmd_out"]]
+  }
+]

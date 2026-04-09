@@ -1,0 +1,59 @@
+1775665533: mosquitto version 2.1.2 starting
+1775665533: Config loaded from mosquitto.conf.
+1775665533: Bridge support available.
+1775665533: Persistence support available.
+1775665533: TLS support available.
+1775665533: TLS-PSK support available.
+1775665533: Websockets support available.
+1775665533: Plugin builtin-security has registered to receive 'basic-auth' events.
+1775665533: Opening ipv6 listen socket on port 1883.
+1775665533: Opening ipv4 listen socket on port 1883.
+1775665533: Opening ipv4 listen socket on port 1883.
+1775665533: Error: Only one usage of each socket address (protocol/network address/port) is normally permitted.
+
+1775665533: mosquitto version 2.1.2 terminating
+1775665533: Saving in-memory database to ./\enersense.db.
+1775665542: mosquitto version 2.1.2 starting
+1775665542: Config loaded from mosquitto.conf.
+1775665542: Bridge support available.
+1775665542: Persistence support available.
+1775665542: TLS support available.
+1775665542: TLS-PSK support available.
+1775665542: Websockets support available.
+1775665542: Plugin builtin-security has registered to receive 'basic-auth' events.
+1775665542: Opening ipv6 listen socket on port 1883.
+1775665542: Opening ipv4 listen socket on port 1883.
+1775665542: Opening ipv4 listen socket on port 1883.
+1775665542: Error: Only one usage of each socket address (protocol/network address/port) is normally permitted.
+
+1775665542: mosquitto version 2.1.2 terminating
+1775665542: Saving in-memory database to ./\enersense.db.
+1775665664: mosquitto version 2.1.2 starting
+1775665664: Config loaded from mosquitto.conf.
+1775665664: Bridge support available.
+1775665664: Persistence support available.
+1775665664: TLS support available.
+1775665664: TLS-PSK support available.
+1775665664: Websockets support available.
+1775665664: Plugin builtin-security has registered to receive 'basic-auth' events.
+1775665664: Opening ipv6 listen socket on port 1883.
+1775665664: Opening ipv4 listen socket on port 1883.
+1775665664: Opening ipv4 listen socket on port 1883.
+1775665664: Error: Only one usage of each socket address (protocol/network address/port) is normally permitted.
+
+1775665664: mosquitto version 2.1.2 terminating
+1775665664: Saving in-memory database to ./\enersense.db.
+1775666039: mosquitto version 2.1.2 starting
+1775666039: Config loaded from mosquitto.conf.
+1775666039: Bridge support available.
+1775666039: Persistence support available.
+1775666039: TLS support available.
+1775666039: TLS-PSK support available.
+1775666039: Websockets support available.
+1775666039: Plugin builtin-security has registered to receive 'basic-auth' events.
+1775666039: Opening ipv6 listen socket on port 1884.
+1775666039: Opening ipv4 listen socket on port 1884.
+1775666039: Opening ipv4 listen socket on port 1883.
+1775666039: mosquitto version 2.1.2 running
+1775666048: mosquitto version 2.1.2 terminating
+1775666048: Saving in-memory database to ./\enersense.db.

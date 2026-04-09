@@ -1,0 +1,30 @@
+[wokwi]
+version = 1
+elf     = firmware/main.py
+firmware = micropython
+
+[[file]]
+name = "main.py"
+src  = "../firmware/main.py"
+
+[[file]]
+name = "config.py"
+src  = "../firmware/config.py"
+
+[[file]]
+name = "sensor.py"
+src  = "../firmware/sensor.py"
+
+[[file]]
+name = "mqtt_client.py"
+src  = "../firmware/mqtt_client.py"
+
+[[file]]
+name = "relay.py"
+src  = "../firmware/relay.py"
+
+[net]
+# Wokwi CLI tunnels the simulated ESP32 Wi-Fi to your local network.
+# Set MQTT_BROKER in config.py to your machine's LAN IP (e.g. 192.168.1.100).
+# Run:  wokwi-cli simulate --timeout 0
+enabled = true

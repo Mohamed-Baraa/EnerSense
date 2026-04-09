@@ -1,0 +1,115 @@
+{
+  "version": 1,
+  "author": "EnerSense Team",
+  "editor": "wokwi",
+  "parts": [
+    {
+      "type": "board-esp32-devkit-v1",
+      "id": "esp32",
+      "top": 160,
+      "left": 240,
+      "attrs": {}
+    },
+
+    {
+      "type": "wokwi-potentiometer",
+      "id": "pot_current",
+      "top": 20,
+      "left": 20,
+      "attrs": { "value": "512" },
+      "label": "ACS712 (current)"
+    },
+
+    {
+      "type": "wokwi-potentiometer",
+      "id": "pot_voltage",
+      "top": 20,
+      "left": 180,
+      "attrs": { "value": "2048" },
+      "label": "ZMPT101B (voltage)"
+    },
+
+    {
+      "type": "wokwi-relay-module",
+      "id": "relay1",
+      "top": 160,
+      "left": 560,
+      "attrs": {}
+    },
+
+    {
+      "type": "wokwi-led",
+      "id": "led_relay",
+      "top": 100,
+      "left": 600,
+      "attrs": { "color": "red" },
+      "label": "Relay ON indicator"
+    },
+
+    {
+      "type": "wokwi-led",
+      "id": "led_status",
+      "top": 100,
+      "left": 660,
+      "attrs": { "color": "green" },
+      "label": "Wi-Fi / MQTT status"
+    },
+
+    {
+      "type": "wokwi-resistor",
+      "id": "r_relay",
+      "top": 130,
+      "left": 600,
+      "attrs": { "value": "220" }
+    },
+
+    {
+      "type": "wokwi-resistor",
+      "id": "r_status",
+      "top": 130,
+      "left": 660,
+      "attrs": { "value": "220" }
+    },
+
+    {
+      "type": "wokwi-vcc",
+      "id": "vcc1",
+      "top": -20,
+      "left": 400,
+      "attrs": {}
+    },
+
+    {
+      "type": "wokwi-gnd",
+      "id": "gnd1",
+      "top": 420,
+      "left": 400,
+      "attrs": {}
+    }
+  ],
+
+  "connections": [
+    ["esp32:GND.1",      "gnd1:GND",       "black",  []],
+    ["esp32:3V3",        "vcc1:VCC",        "red",    []],
+
+    ["pot_current:SIG",  "esp32:IO34",      "orange", []],
+    ["pot_current:VCC",  "vcc1:VCC",        "red",    []],
+    ["pot_current:GND",  "gnd1:GND",        "black",  []],
+
+    ["pot_voltage:SIG",  "esp32:IO35",      "yellow", []],
+    ["pot_voltage:VCC",  "vcc1:VCC",        "red",    []],
+    ["pot_voltage:GND",  "gnd1:GND",        "black",  []],
+
+    ["esp32:IO26",       "relay1:IN",       "purple", []],
+    ["relay1:VCC",       "vcc1:VCC",        "red",    []],
+    ["relay1:GND",       "gnd1:GND",        "black",  []],
+
+    ["esp32:IO26",       "r_relay:1",       "purple", []],
+    ["r_relay:2",        "led_relay:A",     "purple", []],
+    ["led_relay:K",      "gnd1:GND",        "black",  []],
+
+    ["esp32:IO2",        "r_status:1",      "green",  []],
+    ["r_status:2",       "led_status:A",    "green",  []],
+    ["led_status:K",     "gnd1:GND",        "black",  []]
+  ]
+}

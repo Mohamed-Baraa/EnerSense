@@ -1,0 +1,48 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Virtual environments
+venv/
+env/
+.venv/
+
+# ML artifacts (generated — do not commit)
+ml/model.joblib
+ml/scaler.joblib
+ml/metrics.json
+ml/baseline.json
+
+# Database (generated — do not commit)
+server/enersense.db
+server/enersense.db-shm
+server/enersense.db-wal
+
+# Mosquitto (generated / sensitive — NEVER commit)
+server/passwd
+server/mosquitto.log
+server/*.db
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Node-RED runtime
+.node-red/
+
+# Wokwi CLI
+.wokwi/

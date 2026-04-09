@@ -1,0 +1,17 @@
+{
+  "mae": 0.408224,
+  "rmse": 0.612458,
+  "r2": -0.251315,
+  "cv_mae_mean": 0.292319,
+  "n_train": 265,
+  "n_test": 67,
+  "features": [
+    "hour_sin",
+    "hour_cos",
+    "day_sin",
+    "day_cos",
+    "lag_1h",
+    "lag_2h",
+    "lag_3h"
+  ]
+}

@@ -1,0 +1,20 @@
+1775649413: mosquitto version 2.1.2 starting
+1775649413: Config loaded from server\mosquitto.conf.
+1775649413: Bridge support available.
+1775649413: Persistence support available.
+1775649413: TLS support available.
+1775649413: TLS-PSK support available.
+1775649413: Websockets support available.
+1775649413: password-file: Error: Unable to open pwfile "passwd".
+1775649413: mosquitto version 2.1.2 terminating
+1775649413: Saving in-memory database to ./\enersense.db.
+1775731265: mosquitto version 2.1.2 starting
+1775731265: Config loaded from server/mosquitto.conf.
+1775731265: Bridge support available.
+1775731265: Persistence support available.
+1775731265: TLS support available.
+1775731265: TLS-PSK support available.
+1775731265: Websockets support available.
+1775731265: password-file: Error: Unable to open pwfile "passwd".
+1775731265: mosquitto version 2.1.2 terminating
+1775731265: Saving in-memory database to ./\enersense.db.

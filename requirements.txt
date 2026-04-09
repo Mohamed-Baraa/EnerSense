@@ -1,0 +1,17 @@
+# EnerSense — Python dependencies
+# Install with: pip install -r requirements.txt
+
+# ML
+scikit-learn>=1.3.0
+numpy>=1.24.0
+pandas>=2.0.0
+joblib>=1.3.0
+
+# Inference server
+flask>=3.0.0
+
+# InfluxDB client (for train.py data ingestion)
+influxdb>=5.3.1
+
+# Utilities
+mpremote>=1.22.0     # flash firmware to real ESP32
