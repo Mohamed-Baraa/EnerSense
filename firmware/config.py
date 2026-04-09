@@ -13,8 +13,8 @@ WIFI_PASSWORD = "YourPassword"
 
 # --- MQTT broker -------------------------------------------------------------
 #MQTT_BROKER   = "192.168.1.100"  # local broker IP (your laptop/RPi)
-MQTT_BROKER   = "127.0.0.1"
-MQTT_PORT     = 1883
+MQTT_BROKER   = "127.0.0.1"     # use for local hosting
+MQTT_PORT     = 1884
 MQTT_USER     = "enersense"
 MQTT_PASSWORD = "enersense123"
 MQTT_KEEPALIVE = 60

@@ -6,7 +6,7 @@ appliances, visualises usage data on a local web dashboard, detects abnormal
 consumption patterns, and optionally controls appliances via relay.
 
 Built with ESP32 (MicroPython), MQTT, SQLite, Node-RED, and scikit-learn.
-Runs entirely locally — no cloud, no subscription, no internet required.
+Runs entirely locally, no cloud, no subscription, no internet required.
 
 ---
 
@@ -309,7 +309,7 @@ mpremote connect COM3 repl
 
 ## Team
 
-- Mohamed Baraa Ben Mahoud
+- Mohamed Baraa Ben Mahmoud
 - Yassine Ben Abdallah
 - Moemen Ghozzi
 

@@ -201,26 +201,27 @@ sys.modules['machine'] = _machine()
 
 
 # -- network -----------------------------------------------------------------
+_wlan_connected = False
 
 class _WLAN:
     STA_IF = 1
 
     def __init__(self, _):
-        self._active    = False
-        self._connected = False
+        pass
 
     def active(self, v=None):
-        if v is not None:
-            self._active = v
-        return self._active
+        return True
 
     def isconnected(self):
-        return self._connected
+        global _wlan_connected
+        return _wlan_connected
 
     def connect(self, ssid, password):
+        global _wlan_connected
         print(f"[Shim] Wi-Fi connecting to '{ssid}'...")
         time.sleep(0.3)
-        self._connected = True
+ 
+        _wlan_connected = True
         print("[Shim] Wi-Fi connected (simulated IP: 127.0.0.1)")
 
     def ifconfig(self):
