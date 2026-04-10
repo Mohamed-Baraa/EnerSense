@@ -81,7 +81,21 @@ def get_conn():
 
 
 def init_db():
-    """Create tables and indexes if they don't exist yet."""
+    """Create tables and indexes if they don't exist yet.
+    If the database file is corrupted, delete it and start fresh."""
+    import sqlite3 as _sqlite3
+    if os.path.exists(DB_PATH):
+        try:
+            test = _sqlite3.connect(DB_PATH)
+            test.execute("SELECT name FROM sqlite_master LIMIT 1")
+            test.close()
+        except _sqlite3.DatabaseError:
+            print(f"[DB] Corrupted database detected — deleting and recreating.")
+            try:
+                test.close()
+            except Exception:
+                pass
+            os.remove(DB_PATH)
     conn = get_conn()
     conn.executescript(SCHEMA)
     conn.commit()
